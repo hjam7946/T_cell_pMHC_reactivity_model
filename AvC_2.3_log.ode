@@ -1,0 +1,37 @@
+# This file contains the 2D model that was extended to the continuum model and that the majority of the analysis thus far has used.
+
+# Equations
+
+dV/dt = 1/(log(10)*10^V) * (beta * (10^V-1) * (1-(10^V-1)/Vmax) - kappa_V * (10^E-1) * ((10^V-1)/((10^V-1)+a*K_E)) )
+dE/dt = 1/(log(10)*10^E) * (sigma_E + r_E * (10^E-1) * ((10^V-1)/((10^V-1)+K_E)) - delta_E * (10^E-1) - kappa_E * (10^E-1) * ((10^V-1)/((10^V-1)+b*K_E)) - epsilon * (10^E-1) * (10^E-1) )
+
+# Functions
+K_E = 10^(kexp)
+
+# Parameters 
+par sigma_E = 29.6664;
+par r_E = 3.1934;
+par kexp = 2.9840
+par delta_E = 0.2815;
+par epsilon = 3.2395e-6;
+par a = 0.00177
+par b = 38.0927
+par Vmax = 1.1706e5;
+par beta = 1.2201;
+par kappa_V = 0.049418;
+par kappa_E = 2.7765;
+par Vscale = 1e5;
+par Escale = 1e6;
+
+#Initial conditions
+init V = 2
+init E = 2.0264
+
+# Numerics
+@ TOTAL=150,DT=.1,xlo=0,xhi=150,ylo=-1,yhi=10
+@ NPLOT=2,XP1=t,YP1=V,XP2=t,YP2=E
+@ MAXSTOR=10000000
+@ BOUNDS=100,METHOD=stiff
+@ dsmin=1e-5,dsmax=.1,parmin=0,parmax=10,nmax=200000
+@ epsl=1e-7,epsu=1e-7,epss=1e-5,ntst=50,npr=100
+@ autoxmin=0,autoxmax=10,autoymin=-1,autoymax=10
