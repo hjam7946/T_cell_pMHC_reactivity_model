@@ -218,6 +218,3 @@ To see how to use any of these, use MATLAB's 'help' tool in the command window, 
 Also ensure that the following folder is included in the MATLAB path to plot violin plots (Figs. 4E and S5C,F):
 `/Violinplot-Matlab-master/`
 This code was obtained from [Violinplot-Matlab](http://github.com/bastibe/Violinplot-Matlab).
-```
-
-You can copy and paste this markdown into a README.md file for your project. If you have any additional information or updates to include, feel free to edit the document accordingly.
