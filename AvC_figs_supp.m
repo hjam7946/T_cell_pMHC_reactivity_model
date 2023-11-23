@@ -10,7 +10,7 @@
 
 %% Options
 
-fig_num = 'S6'; % choose what to plot/run (S1,S2,S3,S5,M1,M2)
+fig_num = 'S1'; % choose what to plot/run (S1,S2,S3,S4,S5,S6,M1,M2)
 
 % Load parameters from fit result and simulate
 load('AvC - Fits/ga-2022-10-24-at-05-13-49/fitdata.mat');
@@ -285,8 +285,8 @@ if strcmp(fig_num,'S3')
     figurer(4,'w',w,'h',h,'PaperSize','letter')
 
     % Numerical KO, reduced replication rate, total conserved
-    % (to generate data, run AvC_2_3_numericalKO.m with repRateValue set to
-    % 'reduced')
+    % (to generate data, run AvC_2_3_numericalKO.m with repRateValue set
+    % to 'reduced')
     numKO1 = load('AvC_2_3_numericalKO_reducedRep.mat');
     xcutoff1 = numKO1.xcutoff;
     datattc1 = numKO1.datattc;
@@ -336,8 +336,8 @@ if strcmp(fig_num,'S3')
     hold off
 
     % Numerical KO, reduced replication rate, total NOT conserved
-    % (to generate data, run AvC_2_3_numericalKO.m with repRateValue set to
-    % 'reduced' and totConserved set to false)
+    % (to generate data, run AvC_2_3_numericalKO.m with repRateValue set
+    % to 'reduced' and totConserved set to false)
     numKO2 = load('AvC_2_3_numericalKO_reducedRep_notConserved.mat');
     xcutoff2 = numKO2.xcutoff;
     datattc2 = numKO2.datattc;
@@ -385,6 +385,128 @@ if strcmp(fig_num,'S3')
     ylabel('\rmT cell count','FontSize',fs)
     hold off
 
+end
+
+%% Figure S4 - plot pathogen load in the model in time WT vs dTCR
+
+if strcmp(fig_num,'S4')
+    w = 5.5;   % width in cm
+    h = 4.5;    % height in cm changed from 9
+    tdt_col = [171, 36, 41]./255; % matcol(7,:);
+    wt_col = [0.6 0.6 0.6];
+    t = linspace(0,50,51);
+    ms = 3; % marker size, in pts, for scatter plot
+    computePathLoad = false; % change to true to compute values fresh
+    hratio = [0.45 0.225 0.325];
+    dpad=1.1-0.3079; % white space padding in cm at bottom of plot
+
+    times = [7 28 42]; % days post-infection to simulate LCMV-Cl13 loads
+    
+    close(figure(4))
+    figurer(4,'w',w,'h',h,'PaperSize','letter')
+    
+    % Definie deltaTCR rep. mask
+    x = logspace(log10(1./Amax),log10(1./Amin),500);
+    dTCR_mask = 0.5-0.5*tanh((log10(x)-log10(kmode))/0.25);
+    
+    % Run multiple times to get a distribution of pathogen loads
+    if computePathLoad == 1
+        Nsims = 50; % number of simulations
+
+        % Initialize pathogen load variables
+        P_wt_chronic = zeros(Nsims,3);
+        P_dTCR_chronic = zeros(Nsims,3);
+
+        % If want to add variability to initial conditions
+        ICr = 0; % +/- 0% in log space, keep at 0 for consistent IC
+        ICa = 10.^(log10(ICa).*(1+ICr*randn(Nsims,1)));
+        ICc = 10.^(log10(ICc).*(1+ICr*randn(Nsims,1)));
+
+        parfor ii = 1:Nsims
+           
+            % Simulate LCMV-Cl13 dynamics in WT vs dTCR repertoire
+            [~, solc_wt] = ...
+                AvC_2_3('chronic','WT',t,'sigma_E',sigma_E,...
+                'r_E',r_E,'delta_E',delta_E,'epsilon',epsilon,...
+                'Vmax',Pmax,'beta_c',rP_c,'kappa_E',kappa_E,...
+                'kappa_V',kappa_P,'k_mean_WT',kmode,'a',a,'b',b,...
+                'Amin',Amin,'Amax',Amax,'k_std',kspan,'Step',1,...
+                'kstyle',kstyle,'deterministic','off',...
+                'direction',direction,'ICs',[ICc(ii) 0.001],...
+                'kappa_E_min',kappa_E_min);
+            [~, solc_dTCR] = ...
+                AvC_2_3('chronic','WT',t,'sigma_E',sigma_E,...
+                'r_E',r_E,'delta_E',delta_E,'epsilon',epsilon,...
+                'Vmax',Pmax,'beta_c',rP_c,'kappa_E',kappa_E,...
+                'kappa_V',kappa_P,'k_mean_WT',kmode,'a',a,'b',b,...
+                'Amin',Amin,'Amax',Amax,'k_std',kspan,'Step',1,...
+                'kstyle',kstyle,'deterministic','off',...
+                'direction',direction,'mask',dTCR_mask,'ICs',...
+                [ICc(ii) 0.001],'kappa_E_min',kappa_E_min);
+            
+            % Pathogen loads at 7, 28 and 42 d.p.i.
+            for jj = 1:3
+                P_wt_chronic(ii,jj) = ...
+                    solc_wt.V(t==times(jj));
+                P_dTCR_chronic(ii,jj) = ...
+                    solc_dTCR.V(t==times(jj));
+            end
+        end
+    else
+        % Load the data that was computed previously
+        % (to recompute, set computettcs = true)
+        load('AvC_2_3_WTvsdTCR_lcmv_loads.mat')
+    end
+    
+    % Plot result below to include in Figure
+    subplotter(1,1,1,'dpad',dpad)
+    addpath Violinplot-Matlab-master/  
+    vp = violinplot([P_wt_chronic(:,1), P_dTCR_chronic(:,1), ...
+        P_wt_chronic(:,2),P_dTCR_chronic(:,2), ...
+        P_wt_chronic(:,3),P_dTCR_chronic(:,3)],...
+        [repmat({'WT1'},[Nsims 1]);...
+        repmat({'dTCR rep1'},[Nsims 1]);...
+        repmat({'WT2'},[Nsims 1]);...               
+        repmat({'dTCR rep2'},[Nsims 1]);...
+        repmat({'WT3'},[Nsims 1]);...
+        repmat({'dTCR rep3'},[Nsims 1])],'GroupOrder',...
+        {'WT1','dTCR rep1','WT2','dTCR rep2','WT3','dTCR rep3'},...
+        'ShowData',true); % plot violin plot
+    for ii = 1:6 % formatting
+        vp(ii).MedianPlot.Visible = 'off';
+        vp(ii).MeanPlot.Visible = 'on';
+        vp(ii).BoxPlot.Visible = 'off';
+        vp(ii).WhiskerPlot.Visible = 'off';
+        vp(ii).ViolinPlot.LineWidth = 1;
+        vp(ii).ScatterPlot.Visible = 'off';
+        if mod(ii,2) == 1 % if odd
+            vp(ii).EdgeColor = wt_col;
+            vp(ii).ViolinColor = wt_col;
+        elseif mod(ii,2)==0 % if even
+            vp(ii).EdgeColor = tdt_col;
+            vp(ii).ViolinColor = tdt_col;
+        end
+    end
+    hold on
+    
+    % Axis labels and properties
+    plotter([],[],'k','','','Path. load (PFU/mL)',[],[],'AxFontSize',7)
+    set(get(gca,'XAxis'),'TickLabelRotation',0)
+    set(gca,'XTickLabels',{'WT', 'dTCR'})
+    set(gca,'YScale','linear')
+    xlim([0.4 6.6]), ylim([4e4 8e4])
+    
+    % Statistical comparisons
+    p1 = ranksum(P_wt_chronic(:,1), P_dTCR_chronic(:,1));
+    p2 = ranksum(P_wt_chronic(:,2), P_dTCR_chronic(:,2));
+    p3 = ranksum(P_wt_chronic(:,3), P_dTCR_chronic(:,3));
+
+    disp(['Non-parametric comparison at d' num2str(times(1)) ...
+        ':  ' num2str(p1)])
+    disp(['Non-parametric comparison at d' num2str(times(2)) ...
+        ': ' num2str(p2)])
+    disp(['Non-parametric comparison at d' num2str(times(3)) ...
+        ': ' num2str(p3)])
 end
 
 %% Figure S5 - Other tests of TdT roles
@@ -887,7 +1009,7 @@ if strcmp(fig_num,'S6')
     p2 = plotter(pc_wt.ak,kappa_theoretical,'k','A',...
         '\rmpMHC reactivity',['\rmExhaustion rate, ',...
         char(954), '_E'],'','day^{-1}'); hold off
-    set(gca,'xscale','log','yscale','linear','xtick',[1e-5 1e-4 1e-3 1e-2])
+    set(gca,'xscale','log','xtick',[1e-5 1e-4 1e-3 1e-2])
     xlim([Amin,Amax])
     legend([p1(1),p2],{'Individual','Average'},'fontsize',8,'Location',...
         'southeast')
@@ -945,7 +1067,7 @@ if strcmp(fig_num,'S6')
     % Parse data from cell into matrix
     kmode_ttc = zeros(n,Nsims); % time to clearance, varying the mode
     for ii = 1:Nsims
-        cmeans(ii,:) = round((cmean1-cmean0).*(ii-1)./Nsims + cmean0)./255;
+        cmeans(ii,:) = round((cmean1-cmean0).*(ii-1)./Nsims+cmean0)./255;
         kmode_ttc(:,ii) = data_mode{ii}; % each column = ttc at one mode
         staggerscatter(...
             [nan(1,ii-1) 1./kmode_var(ii) nan(1,Nsims-ii)],...
@@ -960,7 +1082,7 @@ if strcmp(fig_num,'S6')
         '\rmTime to clear.',[],'days','AxFontSize',7)
     hold off
 
-    % ------------------------------------------------------------------ %
+    % ----------------------------------------------------------------- %
     % Panel (E) - numerical KO of low-affinity T cells
     % Load the data (gradual removal of T cells with low pMHC-reactivity)
     % (to recompute, run 'AvC_2_3_numericalKO.m' with 'uniform' option 
@@ -1052,14 +1174,14 @@ if strcmp(fig_num,'M1')
     Amax = pa_wt.Amax;
     k = pa_wt.k;
 
-    % ------------------------------------------------------------------ %
+    % ----------------------------------------------------------------- %
     % (A,B) Plots of acute
     ta_wt = ta_wt; % time vector, variable step size
     t2 = ta; % time vector, constant step size
     Va = sola_wt.V;
     ka_prop = sola.k_prop;
 
-    % ------------------------------------------------------------------ %
+    % ----------------------------------------------------------------- %
     subplotter(splty,3,1,'lpad',1.0+0.3,'rpad',0.65+0.2) % (A), virus
     plotter(ta_wt,Va,acolor), hold on
     ylimacute = get(gca,'YLim');
@@ -1071,7 +1193,7 @@ if strcmp(fig_num,'M1')
     set(gca,'XLim',xlimacute,'YScale','log','YLim',[1 1e4],...
         'YMinorTick','off')
 
-    % ------------------------------------------------------------------ %
+    % ----------------------------------------------------------------- %
     subplotter(splty,3,2,'lpad',1.0-0.7,'rpad',0.65+1) % (A), T cell
     [x,y]=meshgrid(t2(rft:rft:end),ak(rfk:rfk:end));
     % z = E(rft:rft:end,rfk:rfk:end)';
@@ -1103,14 +1225,14 @@ if strcmp(fig_num,'M1')
     ax2.Position = ax_pos;
     ylim([Amin Amax])
 
-    % ------------------------------------------------------------------ %
+    % ----------------------------------------------------------------- %
     % (D,E) Plots of the chronic
     ta_wt = tc_wt;
     t2 = tc;
     Va = solc_wt.V;
     kc_prop = solc.k_prop;
 
-    % ------------------------------------------------------------------ %
+    % ----------------------------------------------------------------- %
     subplotter(splty,3,4,'lpad',1.0+0.3,'rpad',0.65+0.2)
     plotter(ta_wt,Va,ccolor), hold on
     ylimchronic = get(gca,'YLim');
@@ -1121,7 +1243,7 @@ if strcmp(fig_num,'M1')
     set(ax3,'XLim',xlimchronic,'YScale','log','YLim',[1 1e6],...
         'YMinorTick','off','YTick',[1 1e2 1e4 1e6],'XTick',[0 40 80 120])
 
-    % ------------------------------------------------------------------ %
+    % ----------------------------------------------------------------- %
     subplotter(splty,3,5,'lpad',1.0-0.7,'rpad',0.65+1) % (B), T cell
     [x,y]=meshgrid(t2(rft:rft:end),ak(rfk:rfk:end));
     % z = E(rft:rft:end,rfk:rfk:end)';
