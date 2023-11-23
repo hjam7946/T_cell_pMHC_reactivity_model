@@ -162,7 +162,7 @@ and loaded by the script to plot.
 
 ## Section XII: Figure S4
 
-This figure, complementary to Figure 4, pertains to the in silico removal of low-affinity T cells when chronic pathogen replication rate is reduced. To plot, run `AvC_figs_supp.m` with `fig_num = 'S4'` on line 13. To plot, run `AvC_figs_supp.m` with `fig_num = 'S4'` on line 13. The pathogen load data shown in the violin plots of Figure S4C and F, for efficiency, were saved into:
+This figure, complementary to Figure 4, pertains to the in silico removal of low-affinity T cells when chronic pathogen replication rate is reduced. To plot, run `AvC_figs_supp.m` with `fig_num = 'S4'` on line 13. To plot, run `AvC_figs_supp.m` with `fig_num = 'S4'` on line 13. The pathogen load data shown in the violin plots of Figure S4G, for efficiency, were saved into:
 - AvC_2_3_WTvsdTCR_lcmv_loads.mat
 To regenerate, set `computettcs` on line 399 to true.
 
